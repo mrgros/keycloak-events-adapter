@@ -1,0 +1,21 @@
+version: "2"
+formatters:
+  settings:
+    golines:
+      max-len: 120
+
+linters:
+  enable:
+    - prealloc
+    - dogsled
+    - unconvert
+    - unparam
+    - whitespace
+    - bodyclose
+    - gosec
+    - forcetypeassert
+    - goconst
+    - makezero
+    - sqlclosecheck
+    - errorlint
+    - gocritic
