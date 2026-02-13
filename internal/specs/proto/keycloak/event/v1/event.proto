@@ -1,0 +1,342 @@
+// Protocol buffer definition for Keycloak events
+// This file defines the data structures used for event logging and administration events in Keycloak
+
+syntax = "proto3";
+
+package keycloak.event.v1;
+
+option csharp_namespace = "Keycloak.Event.V1";
+option go_package = "keycloak/event/v1;eventv1";
+option java_multiple_files = true;
+option java_outer_classname = "EventProto";
+option java_package = "com.keycloak.event.v1";
+option objc_class_prefix = "CKE";
+option php_namespace = "Keycloak\\Event\\V1";
+
+import "google/protobuf/timestamp.proto";
+
+// Operation types for admin events
+enum OperationType {
+  // Invalid operation type
+  OPERATION_TYPE_INVALID = 0;
+  // Resource creation operation
+  OPERATION_TYPE_CREATE = 1;
+  // Resource update operation
+  OPERATION_TYPE_UPDATE = 2;
+  // Resource deletion operation
+  OPERATION_TYPE_DELETE = 3;
+  // Custom action operation
+  OPERATION_TYPE_ACTION = 4;
+}
+
+// Event types for authentication and authorization events
+enum EventType {
+  // Invalid event type
+  EVENT_TYPE_INVALID = 0;
+  // User login event
+  EVENT_TYPE_LOGIN = 1;
+  // User login error event
+  EVENT_TYPE_LOGIN_ERROR = 2;
+  // User registration event
+  EVENT_TYPE_REGISTER = 3;
+  // User registration error event
+  EVENT_TYPE_REGISTER_ERROR = 4;
+  // User logout event
+  EVENT_TYPE_LOGOUT = 5;
+  // User logout error event
+  EVENT_TYPE_LOGOUT_ERROR = 6;
+  // Authorization code to token exchange event
+  EVENT_TYPE_CODE_TO_TOKEN = 7;
+  // Authorization code to token exchange error event
+  EVENT_TYPE_CODE_TO_TOKEN_ERROR = 8;
+  // Client login event
+  EVENT_TYPE_CLIENT_LOGIN = 9;
+  // Client login error event
+  EVENT_TYPE_CLIENT_LOGIN_ERROR = 10;
+  // Refresh token event
+  EVENT_TYPE_REFRESH_TOKEN = 11;
+  // Refresh token error event
+  EVENT_TYPE_REFRESH_TOKEN_ERROR = 12;
+  // Access token validation event (deprecated)
+  EVENT_TYPE_VALIDATE_ACCESS_TOKEN = 13 [deprecated = true];
+  // Access token validation error event (deprecated)
+  EVENT_TYPE_VALIDATE_ACCESS_TOKEN_ERROR = 14 [deprecated = true];
+  // Token introspection event
+  EVENT_TYPE_INTROSPECT_TOKEN = 15;
+  // Token introspection error event
+  EVENT_TYPE_INTROSPECT_TOKEN_ERROR = 16;
+  // Federated identity link event
+  EVENT_TYPE_FEDERATED_IDENTITY_LINK = 17;
+  // Federated identity link error event
+  EVENT_TYPE_FEDERATED_IDENTITY_LINK_ERROR = 18;
+  // Federated identity removal event
+  EVENT_TYPE_REMOVE_FEDERATED_IDENTITY = 19;
+  // Federated identity removal error event
+  EVENT_TYPE_REMOVE_FEDERATED_IDENTITY_ERROR = 20;
+  // Email update event
+  EVENT_TYPE_UPDATE_EMAIL = 21;
+  // Email update error event
+  EVENT_TYPE_UPDATE_EMAIL_ERROR = 22;
+  // Profile update event
+  EVENT_TYPE_UPDATE_PROFILE = 23;
+  // Profile update error event
+  EVENT_TYPE_UPDATE_PROFILE_ERROR = 24;
+  // Password update event (deprecated)
+  EVENT_TYPE_UPDATE_PASSWORD = 25 [deprecated = true];
+  // Password update error event (deprecated)
+  EVENT_TYPE_UPDATE_PASSWORD_ERROR = 26 [deprecated = true];
+  // TOTP update event (deprecated)
+  EVENT_TYPE_UPDATE_TOTP = 27 [deprecated = true];
+  // TOTP update error event (deprecated)
+  EVENT_TYPE_UPDATE_TOTP_ERROR = 28 [deprecated = true];
+  // Email verification event
+  EVENT_TYPE_VERIFY_EMAIL = 29;
+  // Email verification error event
+  EVENT_TYPE_VERIFY_EMAIL_ERROR = 30;
+  // Profile verification event
+  EVENT_TYPE_VERIFY_PROFILE = 31;
+  // Profile verification error event
+  EVENT_TYPE_VERIFY_PROFILE_ERROR = 32;
+  // TOTP removal event (deprecated)
+  EVENT_TYPE_REMOVE_TOTP = 33 [deprecated = true];
+  // TOTP removal error event (deprecated)
+  EVENT_TYPE_REMOVE_TOTP_ERROR = 34 [deprecated = true];
+  // Consent grant event
+  EVENT_TYPE_GRANT_CONSENT = 35;
+  // Consent grant error event
+  EVENT_TYPE_GRANT_CONSENT_ERROR = 36;
+  // Consent update event
+  EVENT_TYPE_UPDATE_CONSENT = 37;
+  // Consent update error event
+  EVENT_TYPE_UPDATE_CONSENT_ERROR = 38;
+  // Consent revocation event
+  EVENT_TYPE_REVOKE_GRANT = 39;
+  // Consent revocation error event
+  EVENT_TYPE_REVOKE_GRANT_ERROR = 40;
+  // Email verification send event
+  EVENT_TYPE_SEND_VERIFY_EMAIL = 41;
+  // Email verification send error event
+  EVENT_TYPE_SEND_VERIFY_EMAIL_ERROR = 42;
+  // Password reset send event
+  EVENT_TYPE_SEND_RESET_PASSWORD = 43;
+  // Password reset send error event
+  EVENT_TYPE_SEND_RESET_PASSWORD_ERROR = 44;
+  // Identity provider link send event
+  EVENT_TYPE_SEND_IDENTITY_PROVIDER_LINK = 45;
+  // Identity provider link send error event
+  EVENT_TYPE_SEND_IDENTITY_PROVIDER_LINK_ERROR = 46;
+  // Password reset event
+  EVENT_TYPE_RESET_PASSWORD = 47;
+  // Password reset error event
+  EVENT_TYPE_RESET_PASSWORD_ERROR = 48;
+  // Authentication restart event
+  EVENT_TYPE_RESTART_AUTHENTICATION = 49;
+  // Authentication restart error event
+  EVENT_TYPE_RESTART_AUTHENTICATION_ERROR = 50;
+  // Invalid signature event
+  EVENT_TYPE_INVALID_SIGNATURE = 51;
+  // Invalid signature error event
+  EVENT_TYPE_INVALID_SIGNATURE_ERROR = 52;
+  // Node registration event
+  EVENT_TYPE_REGISTER_NODE = 53;
+  // Node registration error event
+  EVENT_TYPE_REGISTER_NODE_ERROR = 54;
+  // Node unregistration event
+  EVENT_TYPE_UNREGISTER_NODE = 55;
+  // Node unregistration error event
+  EVENT_TYPE_UNREGISTER_NODE_ERROR = 56;
+  // User info request event
+  EVENT_TYPE_USER_INFO_REQUEST = 57;
+  // User info request error event
+  EVENT_TYPE_USER_INFO_REQUEST_ERROR = 58;
+  // Identity provider account linking event
+  EVENT_TYPE_IDENTITY_PROVIDER_LINK_ACCOUNT = 59;
+  // Identity provider account linking error event
+  EVENT_TYPE_IDENTITY_PROVIDER_LINK_ACCOUNT_ERROR = 60;
+  // Identity provider login event
+  EVENT_TYPE_IDENTITY_PROVIDER_LOGIN = 61;
+  // Identity provider login error event
+  EVENT_TYPE_IDENTITY_PROVIDER_LOGIN_ERROR = 62;
+  // Identity provider first login event
+  EVENT_TYPE_IDENTITY_PROVIDER_FIRST_LOGIN = 63;
+  // Identity provider first login error event
+  EVENT_TYPE_IDENTITY_PROVIDER_FIRST_LOGIN_ERROR = 64;
+  // Identity provider post-login event
+  EVENT_TYPE_IDENTITY_PROVIDER_POST_LOGIN = 65;
+  // Identity provider post-login error event
+  EVENT_TYPE_IDENTITY_PROVIDER_POST_LOGIN_ERROR = 66;
+  // Identity provider response event
+  EVENT_TYPE_IDENTITY_PROVIDER_RESPONSE = 67;
+  // Identity provider response error event
+  EVENT_TYPE_IDENTITY_PROVIDER_RESPONSE_ERROR = 68;
+  // Identity provider token retrieval event
+  EVENT_TYPE_IDENTITY_PROVIDER_RETRIEVE_TOKEN = 69;
+  // Identity provider token retrieval error event
+  EVENT_TYPE_IDENTITY_PROVIDER_RETRIEVE_TOKEN_ERROR = 70;
+  // User impersonation event
+  EVENT_TYPE_IMPERSONATE = 71;
+  // User impersonation error event
+  EVENT_TYPE_IMPERSONATE_ERROR = 72;
+  // Custom required action event
+  EVENT_TYPE_CUSTOM_REQUIRED_ACTION = 73;
+  // Custom required action error event
+  EVENT_TYPE_CUSTOM_REQUIRED_ACTION_ERROR = 74;
+  // Execute actions event
+  EVENT_TYPE_EXECUTE_ACTIONS = 75;
+  // Execute actions error event
+  EVENT_TYPE_EXECUTE_ACTIONS_ERROR = 76;
+  // Execute action token event
+  EVENT_TYPE_EXECUTE_ACTION_TOKEN = 77;
+  // Execute action token error event
+  EVENT_TYPE_EXECUTE_ACTION_TOKEN_ERROR = 78;
+  // Client info event
+  EVENT_TYPE_CLIENT_INFO = 79;
+  // Client info error event
+  EVENT_TYPE_CLIENT_INFO_ERROR = 80;
+  // Client registration event
+  EVENT_TYPE_CLIENT_REGISTER = 81;
+  // Client registration error event
+  EVENT_TYPE_CLIENT_REGISTER_ERROR = 82;
+  // Client update event
+  EVENT_TYPE_CLIENT_UPDATE = 83;
+  // Client update error event
+  EVENT_TYPE_CLIENT_UPDATE_ERROR = 84;
+  // Client deletion event
+  EVENT_TYPE_CLIENT_DELETE = 85;
+  // Client deletion error event
+  EVENT_TYPE_CLIENT_DELETE_ERROR = 86;
+  // Client-initiated account linking event
+  EVENT_TYPE_CLIENT_INITIATED_ACCOUNT_LINKING = 87;
+  // Client-initiated account linking error event
+  EVENT_TYPE_CLIENT_INITIATED_ACCOUNT_LINKING_ERROR = 88;
+  // Token exchange event
+  EVENT_TYPE_TOKEN_EXCHANGE = 89;
+  // Token exchange error event
+  EVENT_TYPE_TOKEN_EXCHANGE_ERROR = 90;
+  // OAuth2 device authentication event
+  EVENT_TYPE_OAUTH2_DEVICE_AUTH = 91;
+  // OAuth2 device authentication error event
+  EVENT_TYPE_OAUTH2_DEVICE_AUTH_ERROR = 92;
+  // OAuth2 device user code verification event
+  EVENT_TYPE_OAUTH2_DEVICE_VERIFY_USER_CODE = 93;
+  // OAuth2 device user code verification error event
+  EVENT_TYPE_OAUTH2_DEVICE_VERIFY_USER_CODE_ERROR = 94;
+  // OAuth2 device code to token event
+  EVENT_TYPE_OAUTH2_DEVICE_CODE_TO_TOKEN = 95;
+  // OAuth2 device code to token error event
+  EVENT_TYPE_OAUTH2_DEVICE_CODE_TO_TOKEN_ERROR = 96;
+  // AuthReqID to token event
+  EVENT_TYPE_AUTHREQID_TO_TOKEN = 97;
+  // AuthReqID to token error event
+  EVENT_TYPE_AUTHREQID_TO_TOKEN_ERROR = 98;
+  // Permission token event
+  EVENT_TYPE_PERMISSION_TOKEN = 99;
+  // Permission token error event
+  EVENT_TYPE_PERMISSION_TOKEN_ERROR = 100;
+  // Account deletion event
+  EVENT_TYPE_DELETE_ACCOUNT = 101;
+  // Account deletion error event
+  EVENT_TYPE_DELETE_ACCOUNT_ERROR = 102;
+  // Pushed authorization request event
+  EVENT_TYPE_PUSHED_AUTHORIZATION_REQUEST = 103;
+  // Pushed authorization request error event
+  EVENT_TYPE_PUSHED_AUTHORIZATION_REQUEST_ERROR = 104;
+  // User disabled by permanent lockout event
+  EVENT_TYPE_USER_DISABLED_BY_PERMANENT_LOCKOUT = 105;
+  // User disabled by permanent lockout error event
+  EVENT_TYPE_USER_DISABLED_BY_PERMANENT_LOCKOUT_ERROR = 106;
+  // User disabled by temporary lockout event
+  EVENT_TYPE_USER_DISABLED_BY_TEMPORARY_LOCKOUT = 107;
+  // User disabled by temporary lockout error event
+  EVENT_TYPE_USER_DISABLED_BY_TEMPORARY_LOCKOUT_ERROR = 108;
+  // OAuth2 extension grant event
+  EVENT_TYPE_OAUTH2_EXTENSION_GRANT = 109;
+  // OAuth2 extension grant error event
+  EVENT_TYPE_OAUTH2_EXTENSION_GRANT_ERROR = 110;
+  // Federated identity override link event
+  EVENT_TYPE_FEDERATED_IDENTITY_OVERRIDE_LINK = 111;
+  // Federated identity override link error event
+  EVENT_TYPE_FEDERATED_IDENTITY_OVERRIDE_LINK_ERROR = 112;
+  // Credential update event
+  EVENT_TYPE_UPDATE_CREDENTIAL = 113;
+  // Credential update error event
+  EVENT_TYPE_UPDATE_CREDENTIAL_ERROR = 114;
+  // Credential removal event
+  EVENT_TYPE_REMOVE_CREDENTIAL = 115;
+  // Credential removal error event
+  EVENT_TYPE_REMOVE_CREDENTIAL_ERROR = 116;
+  // Organization invitation event
+  EVENT_TYPE_INVITE_ORG = 117;
+  // Organization invitation error event
+  EVENT_TYPE_INVITE_ORG_ERROR = 118;
+  // User session deletion event
+  EVENT_TYPE_USER_SESSION_DELETED = 119;
+  // User session deletion error event
+  EVENT_TYPE_USER_SESSION_DELETED_ERROR = 120;
+}
+
+// Authentication details for admin events
+message AuthDetails {
+  // Realm identifier
+  string realm_id = 1;
+  // Realm name
+  string realm_name = 2;
+  // Client identifier
+  string client_id = 3;
+  // User identifier
+  string user_id = 4;
+  // IP address of the client
+  string ip_address = 5;
+}
+
+// Admin event message for Keycloak administration operations
+message AdminEvent {
+  // Unique event identifier
+  string id = 1;
+  // Event timestamp
+  google.protobuf.Timestamp time = 2;
+  // Realm identifier
+  string realm_id = 3;
+  // Realm name
+  string realm_name = 4;
+  // Authentication details
+  AuthDetails auth_details = 5;
+  // Resource type
+  string resource_type = 6;
+  // Operation type
+  OperationType operation_type = 7;
+  // Resource path
+  string resource_path = 8;
+  // Resource representation
+  string representation = 9;
+  // Error message (if any)
+  string error = 10;
+  // Additional event details
+  map<string, string> details = 11;
+}
+
+// Event message for Keycloak authentication and authorization events
+message Event {
+  // Unique event identifier
+  string id = 1;
+  // Event timestamp
+  google.protobuf.Timestamp time = 2;
+  // Event type
+  EventType type = 3;
+  // Realm identifier
+  string realm_id = 4;
+  // Realm name
+  string realm_name = 5;
+  // Client identifier
+  string client_id = 6;
+  // User identifier
+  string user_id = 7;
+  // Session identifier
+  string session_id = 8;
+  // IP address of the client
+  string ip_address = 9;
+  // Error message (if any)
+  string error = 10;
+  // Additional event details
+  map<string, string> details = 11;
+}

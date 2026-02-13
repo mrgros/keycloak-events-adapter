@@ -1,0 +1,25 @@
+version: v2
+modules:
+  - path: 3dparty/proto_include
+    lint:
+      disallow_comment_ignores: true
+  - path: internal/specs/proto
+    lint:
+      use:
+        - STANDARD
+      except:
+        - FIELD_NOT_REQUIRED
+        - PACKAGE_NO_IMPORT_CYCLE
+      ignore:
+        - internal/specs/proto/validate/validate.proto
+      enum_zero_value_suffix: _INVALID
+      service_suffix: API
+      disallow_comment_ignores: true
+    breaking:
+      use:
+        - FILE
+      except:
+        - EXTENSION_NO_DELETE
+        - FIELD_SAME_DEFAULT
+      ignore:
+        - internal/specs/proto/validate/validate.proto

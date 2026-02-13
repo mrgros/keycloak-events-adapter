@@ -1,0 +1,143 @@
+// Protocol buffer definition for Keycloak Event API
+// This file defines the gRPC service interface for creating and managing Keycloak events
+// It provides methods for both admin events (administrative operations) and regular events (authentication/authorization)
+
+syntax = "proto3";
+
+package keycloak.event.v1;
+
+option csharp_namespace = "Keycloak.Event.V1";
+option go_package = "keycloak/event/v1;eventv1";
+option java_multiple_files = true;
+option java_outer_classname = "EventApiProto";
+option java_package = "com.keycloak.event.v1";
+option objc_class_prefix = "CKE";
+option php_namespace = "Keycloak\\Event\\V1";
+
+import "keycloak/event/v1/event.proto";
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
+// EventAPI service provides methods for creating and managing Keycloak events
+// through gRPC interface. It supports both admin events (administrative operations)
+// and regular events (authentication/authorization).
+service EventAPI {
+  // CreateAdmin creates an admin event for administrative operations in Keycloak
+  // such as user management, realm configuration, and other administrative tasks.
+  rpc CreateAdmin(CreateAdminRequest) returns (CreateAdminResponse) {}
+
+  // Create creates a regular event for authentication and authorization operations
+  // in Keycloak such as user login, logout, token exchange, and other security events.
+  rpc Create(CreateRequest) returns (CreateResponse) {}
+}
+
+// CreateAdminRequest represents a request to create an admin event in Keycloak
+// for administrative operations. It includes all necessary information about
+// the operation, including authentication details, resource information, and any errors.
+message CreateAdminRequest {
+  // Unique identifier for the admin event
+  string id = 1 [(validate.rules).string.uuid = true];
+
+  // Timestamp when the admin event occurred
+  google.protobuf.Timestamp time = 2;
+
+  // Unique identifier of the realm where the event occurred
+  string realm_id = 3 [(validate.rules).string.uuid = true];
+
+  // Name of the realm where the event occurred
+  string realm_name = 4;
+
+  // Authentication details of the user or client who performed the operation
+  AuthDetails auth_details = 5;
+
+  // Type of resource that was affected by the operation (e.g., user, client, realm)
+  string resource_type = 6;
+
+  // Type of operation performed (create, update, delete, action)
+  OperationType operation_type = 7 [(validate.rules).enum.defined_only = true];
+
+  // Path to the resource that was affected by the operation
+  string resource_path = 8;
+
+  // Representation of the resource after the operation (optional)
+  string representation = 9;
+
+  // Error message if the operation failed (optional)
+  string error = 10;
+
+  // Additional details about the event in key-value pairs
+  map<string, string> details = 11 [
+    (validate.rules).map = {
+      ignore_empty: true,
+    }
+  ];
+
+  // AuthDetails contains authentication information about the user or client
+  // who performed the administrative operation.
+  message AuthDetails {
+    // Unique identifier of the realm where the authentication occurred
+    string realm_id = 1 [(validate.rules).string.uuid = true];
+
+    // Name of the realm where the authentication occurred
+    string realm_name = 2;
+
+    // Unique identifier of the client used for the operation
+    string client_id = 3 [(validate.rules).string.uuid = true];
+
+    // Unique identifier of the user who performed the operation
+    string user_id = 4 [(validate.rules).string.uuid = true];
+
+    // IP address of the client that initiated the operation
+    string ip_address = 5 [(validate.rules).string.ip = true];
+  }
+}
+
+// CreateAdminResponse represents the response for creating an admin event.
+// Currently empty as the operation is fire-and-forget.
+message CreateAdminResponse {}
+
+// CreateRequest represents a request to create a regular event in Keycloak
+// for authentication and authorization operations. It includes all necessary
+// information about the event, including user details, session information, and any errors.
+message CreateRequest {
+  // Unique identifier for the event
+  string id = 1 [(validate.rules).string.uuid = true];
+
+  // Timestamp when the event occurred
+  google.protobuf.Timestamp time = 2;
+
+  // Type of event that occurred (login, logout, token exchange, etc.)
+  EventType type = 3 [(validate.rules).enum.defined_only = true];
+
+  // Unique identifier of the realm where the event occurred
+  string realm_id = 4 [(validate.rules).string.uuid = true];
+
+  // Name of the realm where the event occurred
+  string realm_name = 5;
+
+  // Unique identifier of the client involved in the event
+  string client_id = 6;
+
+  // Unique identifier of the user involved in the event
+  string user_id = 7 [(validate.rules).string.uuid = true];
+
+  // Unique identifier of the user session
+  string session_id = 8;
+
+  // IP address of the client that initiated the event
+  string ip_address = 9 [(validate.rules).string.ip = true];
+
+  // Error message if the event represents a failed operation (optional)
+  string error = 10;
+
+  // Additional details about the event in key-value pairs
+  map<string, string> details = 11 [
+    (validate.rules).map = {
+      ignore_empty: true,
+    }
+  ];
+}
+
+// CreateResponse represents the response for creating a regular event.
+// Currently empty as the operation is fire-and-forget.
+message CreateResponse {}

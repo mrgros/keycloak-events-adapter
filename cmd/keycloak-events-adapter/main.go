@@ -6,13 +6,23 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/validator"
 	"github.com/jessevdk/go-flags"
+	tnt "github.com/tarantool/go-tarantool"
+	tntqueue "github.com/tarantool/go-tarantool/queue"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"keycloak-events-adapter/internal"
+	grpc_server "keycloak-events-adapter/internal/api/grpc"
+	eventv1 "keycloak-events-adapter/internal/specs/gen/keycloak/event/v1"
+	"keycloak-events-adapter/internal/tarantool"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
+	"time"
 )
 
 func main() {
@@ -38,14 +48,73 @@ func main() {
 		}
 	}()
 
+	osSigCh := make(chan os.Signal, 1)
+	signal.Notify(
+		osSigCh,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+	)
+
+	go func() {
+		s := <-osSigCh
+		if s == syscall.SIGINT ||
+			s == syscall.SIGTERM ||
+			s == syscall.SIGQUIT {
+			logger.Info("Received signal! Process exited")
+			cancelFunc()
+		}
+	}()
+
+	tntConn, err := tnt.Connect(fmt.Sprintf("%s:%d", cfg.TntHost, cfg.TntPort), tnt.Opts{
+		User:      cfg.TntUser,
+		Pass:      cfg.TntPassword,
+		Reconnect: 1 * time.Second,
+		Timeout:   25 * time.Second,
+	})
+	if err != nil {
+		logger.Fatal("can't connect tarantool", zap.Error(err))
+	}
+
+	tntQueue := tntqueue.New(tntConn, tarantool.EventsQueueName)
+	ok, err := tntQueue.Exists()
+	if err != nil {
+		logger.Fatal("can't check queue existence", zap.Error(err))
+	}
+	if !ok {
+		logger.Fatal("queue doesn't exist", zap.String("queue_name", tarantool.EventsQueueName))
+	}
+
+	tntAdminQueue := tntqueue.New(tntConn, tarantool.AdminEventsQueueName)
+	ok, err = tntAdminQueue.Exists()
+	if err != nil {
+		logger.Fatal("can't check queue existence", zap.Error(err))
+	}
+	if !ok {
+		logger.Fatal("queue doesn't exist", zap.String("queue_name", tarantool.AdminEventsQueueName))
+	}
+
+	adminEventNotify := internal.NewDummy[internal.AdminEvent](logger)
+	eventNotify := internal.NewDummy[internal.Event](logger)
+	adminEventStorage := tarantool.NewEvent[internal.AdminEvent](tntAdminQueue, adminEventNotify, logger)
+	eventStorage := tarantool.NewEvent[internal.Event](tntQueue, eventNotify, logger)
+	eventService := internal.NewEventService(adminEventStorage, eventStorage)
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errN := startGRPCServer(ctx, &cfg, logger)
+		errN := startGRPCServer(ctx, &cfg, eventService, logger)
 		if errN != nil {
 			logger.Error("can't start gRPC server or server return error while working", zap.Error(errN))
 		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		eventService.Read(ctx, 5)
 	}()
 
 	wg.Wait()
@@ -56,6 +125,7 @@ func main() {
 func startGRPCServer(
 	ctx context.Context,
 	cfg *Config,
+	eventService internal.EventProvider,
 	logger *zap.Logger,
 ) error {
 	logger.Info("gRPC started", zap.String("listen", cfg.GrpcListen))
@@ -85,6 +155,8 @@ func startGRPCServer(
 			grpc_validator.StreamServerInterceptor(),
 		),
 	)
+
+	eventv1.RegisterEventAPIServer(s, grpc_server.NewEventServer(eventService))
 
 	reflection.Register(s)
 
